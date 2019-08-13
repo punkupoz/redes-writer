@@ -43,7 +43,7 @@ func TestConfig_Parse(t *testing.T) {
 	assert.Equal(t, "http://elasticsearch:9200/?sniff=false", cnf.ElasticSearch.Url)
 
 	// Listener
-	assert.Equal(t, 3*time.Second, cnf.Listener.FlushInterval)
+	assert.Equal(t, 1*time.Second, cnf.Listener.FlushInterval)
 	assert.Equal(t, 500, cnf.Listener.BufferSize)
 }
 
