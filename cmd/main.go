@@ -6,7 +6,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	. "github.com/andytruong/es-writer"
+	. "github.com/andytruong/redes-writer"
 )
 
 func main() {
