@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"code.go1.com/houston/indexer/util"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +19,15 @@ func redisUrl() string {
 	return "redis://localhost:6379?ssl=false"
 }
 
-func TestConfig(t *testing.T) {
+func esUrl() string {
+	if env := os.Getenv("ES_URL"); "" != env {
+		return env
+	}
+
+	return "http://127.0.0.1:9200/?sniff=false"
+}
+
+func TestConfig_Parse(t *testing.T) {
 	cnf, err := NewConfig("config.sample.yaml")
 	if nil != err {
 		t.Error(err)
@@ -36,7 +43,7 @@ func TestConfig(t *testing.T) {
 
 	// Listener
 	assert.Equal(t, 3*time.Second, cnf.Listener.FlushInterval)
-	assert.Equal(t, uint16(500), cnf.Listener.BufferSize)
+	assert.Equal(t, 500, cnf.Listener.BufferSize)
 }
 
 func TestRequest_ToBulkIndex(t *testing.T) {
@@ -127,7 +134,7 @@ func TestRequest_ToBulkDelete(t *testing.T) {
 }
 
 func TestQueue_Learn(t *testing.T) {
-	client := util.NewRedisClient(redisUrl())
+	client := newRedisClient(redisUrl())
 
 	// learn redis API to ping server
 	{
@@ -170,7 +177,7 @@ func TestQueue_Learn(t *testing.T) {
 }
 
 func TestQueue_Listen(t *testing.T) {
-	client := util.NewRedisClient(redisUrl())
+	client := newRedisClient(redisUrl())
 	client.FlushAll()
 
 	queue, _ := NewQueue(client, "myQueue")
@@ -194,7 +201,7 @@ func TestQueue_Listen(t *testing.T) {
 }
 
 func TestQueue_Subscription(t *testing.T) {
-	client := util.NewRedisClient(redisUrl())
+	client := newRedisClient(redisUrl())
 	client.FlushAll()
 
 	queue, _ := newQueue(client, "myQueue")
@@ -205,18 +212,18 @@ func TestQueue_Subscription(t *testing.T) {
 
 	{ // publish & got notification
 		_ = client.Publish(queue.pubsubChanel(), "000")
-		assert.Equal(t, "000", util.ReadTimeout(sub))
+		assert.Equal(t, "000", readTimeout(sub))
 	}
 
 	{ // publish & publish again -> both should got notification
 		client.Publish(queue.pubsubChanel(), 111)
-		assert.Equal(t, "111", util.ReadTimeout(sub))
+		assert.Equal(t, "111", readTimeout(sub))
 
 		_ = client.Publish(queue.pubsubChanel(), 222)
-		assert.Equal(t, "222", util.ReadTimeout(sub))
+		assert.Equal(t, "222", readTimeout(sub))
 
 		// no more message to read.
-		assert.Equal(t, "", util.ReadTimeout(sub))
+		assert.Equal(t, "", readTimeout(sub))
 	}
 
 	{ // Test that we pub 3 messages, only receive one notification from subscription
@@ -224,19 +231,19 @@ func TestQueue_Subscription(t *testing.T) {
 		_ = client.Publish(queue.pubsubChanel(), 444)
 
 		// we should only receive one notification.
-		assert.Equal(t, "333", util.ReadTimeout(sub))
+		assert.Equal(t, "333", readTimeout(sub))
 
 		// check again, should receive timeout error because all consumed.
-		assert.Equal(t, "", util.ReadTimeout(sub))
+		assert.Equal(t, "", readTimeout(sub))
 	}
 }
 
 func TestListener_Run(t *testing.T) {
-	client := util.NewRedisClient(redisUrl())
+	client := newRedisClient(redisUrl())
 	client.FlushAll()
 	queue, _ := NewQueue(client, "myQueue")
 
-	l := &listener{}
+	l := newListener()
 	recorder := []string{}
 	ctx, cancel := context.WithCancel(context.TODO())
 	wg := sync.WaitGroup{}

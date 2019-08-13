@@ -66,7 +66,7 @@ func NewWriter(ctx context.Context, client *elastic.Client, cnf *Config) (Writer
 		FlushInterval(cnf.Listener.FlushInterval).
 		// Workers(5)                TODO: Learn this feature
 		// RetryItemStatusCodes(400) TODO: Learn this feature
-		// Stats(true)               TODO: Provide stats
+		Stats(true).
 		Do(ctx)
 
 	if nil != err {
@@ -105,12 +105,12 @@ func Run(ctx context.Context, cnfPath string) error {
 		return err
 	}
 
-	cElasticSearch, err := NewElasticSearchClient(cnf.ElasticSearch.Url)
+	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
 		return err
 	}
 
-	cRedis := NewRedisClient(cnf.Redis.Url)
+	cRedis := newRedisClient(cnf.Redis.Url)
 	queue, err := NewQueue(cRedis, cnf.Redis.QueueName)
 	if nil != err {
 		return err
@@ -121,8 +121,12 @@ func Run(ctx context.Context, cnfPath string) error {
 		return err
 	}
 
+	return run(cc, queue, writer)
+}
+
+func run(ctx context.Context, queue Queue, writer Writer) error {
 	errCh := make(chan error, 1)
-	err = NewListener().Run(cc, errCh, queue, writer)
+	err := NewListener().Run(ctx, errCh, queue, writer)
 	if nil != err {
 		return err
 	}

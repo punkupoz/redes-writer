@@ -25,6 +25,6 @@ Start new requests
 
 ### Test local
 
-    docker run -d -p 9200:9200                --rm --name es       elasticsearch:5-alpine
-    docker run -d -p 5672:5672 -p 15672:15672 --rm --name rabbitmq rabbitmq:3-management
+    docker run -d -p 6379:6379 --rm --name=hi-redis redis:5.0-alpine
+    docker run -d -p 9200:9200 --rm --name=hi-es7 -e "discovery.type=single-node"  docker.elastic.co/elasticsearch/elasticsearch:7.3.0    
     go test -race -v ./...
