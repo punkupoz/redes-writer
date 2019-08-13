@@ -1,4 +1,4 @@
-Elastic Search writer [![Build Status](https://travis-ci.org/andytruong/redes-writer.svg?branch=master)](https://travis-ci.org/andytruong/redes-writer)
+Elastic Search writer [![Build Status](https://travis-ci.org/andytruong/redes-writer.svg?branch=7.x)](https://travis-ci.org/andytruong/redes-writer)
 ====
 
 ## Problems
