@@ -1,4 +1,4 @@
-module github.com/andytruong/es-writer
+module github.com/andytruong/redes-writer
 
 go 1.12
 

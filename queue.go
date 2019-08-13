@@ -1,4 +1,4 @@
-package es_writer
+package redes_writer
 
 import (
 	"context"
