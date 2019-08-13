@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -286,4 +287,50 @@ func TestListener_Run(t *testing.T) {
 	assert.Contains(t, recorder[2], `{"delete":{"_index":"lr","_type":"enrolment","_id":"123","routing":"456"}}`)
 
 	cancel()
+}
+
+func TestEndToEnd(t *testing.T) {
+	ctx, done := context.WithCancel(context.TODO())
+	defer done()
+
+	// create services & start the application
+	es, _ := newElasticSearchClient(esUrl())
+
+	_, err := es.CreateIndex("lr").Do(ctx)
+	if err != nil {
+		if !strings.Contains(err.Error(), "esource_already_exists_exception") {
+			t.Error(err)
+			t.FailNow()
+		}
+	}
+
+	cnf, _ := NewConfig("config.sample.yaml")
+	writer, _ := NewWriter(ctx, es, cnf)
+	client := newRedisClient(redisUrl())
+	client.FlushAll()
+	queue, _ := NewQueue(client, "myQueue")
+	_, _ = run(ctx, queue, writer)
+
+	// send some requests into queue
+	m1 := `{"type": "index","index": {"index": "lr","type":  "enrolment","id":    "123","routing": "456","doc": {"field1" : "value1"}}}`
+	m2 := `{"type": "update", "update": { "index": "lr", "type":  "enrolment", "id":    "123", "routing": "456", "doc": { "field2" : "value2" }}}`
+
+	if err := queue.Write(m1, m2); err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	time.Sleep(4 * time.Second)
+
+	// Check stats
+	res, err := es.Search("lr").Routing("456").Do(ctx)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	assert.True(t, res.TotalHits() > 0)
+
+	doc, _ := res.Hits.Hits[0].Source.MarshalJSON()
+	assert.Equal(t, `{"field1":"value1","field2":"value2"}`, string(doc))
 }

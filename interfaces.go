@@ -96,40 +96,40 @@ func NewConfig(cnfPath string) (*Config, error) {
 	return cnf, nil
 }
 
-func Run(ctx context.Context, cnfPath string) error {
+func Run(ctx context.Context, cnfPath string) (chan error, error) {
 	cc, stop := context.WithCancel(ctx)
 	defer stop()
 
 	cnf, err := NewConfig(cnfPath)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	cRedis := newRedisClient(cnf.Redis.Url)
 	queue, err := NewQueue(cRedis, cnf.Redis.QueueName)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	writer, err := NewWriter(cc, cElasticSearch, cnf)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
 	return run(cc, queue, writer)
 }
 
-func run(ctx context.Context, queue Queue, writer Writer) error {
+func run(ctx context.Context, queue Queue, writer Writer) (chan error, error) {
 	errCh := make(chan error, 1)
 	err := NewListener().Run(ctx, errCh, queue, writer)
 	if nil != err {
-		return err
+		return nil, err
 	}
 
-	return <-errCh
+	return errCh, nil
 }

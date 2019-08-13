@@ -10,4 +10,4 @@ elasticsearch:
 
 listener:
   bufferSize: 500
-  flushInterval: 3s
+  flushInterval: 1s # for faster CI test running

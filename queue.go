@@ -46,8 +46,8 @@ func newQueue(client *redis.Client, name string) (*queue, error) {
 func (q queue) Write(payload ...interface{}) error {
 	cmd := q.client.RPush(q.Name(), payload...)
 
-	if err := q.ps.Ping(); err != nil {
-		return err
+	if pub := q.client.Publish(q.pubsubChanel(), "111"); pub.Err() != nil {
+		return pub.Err()
 	}
 
 	return cmd.Err()
