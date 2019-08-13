@@ -4,8 +4,10 @@ go:
   - stable
 services:
   - redis-server
-  - elasticsearch
+  - docker
 install:
   - GO111MODULE=on go mod vendor
+  - docker run -d -p 9200:9200 --rm --name=hi-es7 -e "discovery.type=single-node"  docker.elastic.co/elasticsearch/elasticsearch:7.3.0
+  - while ! nc -z localhost 9200; do sleep 1; done
 script:
   - go test -race -v ./...
