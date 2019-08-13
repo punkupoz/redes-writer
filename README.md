@@ -14,6 +14,11 @@ It's also easy to create cluster ElasticSearch servers without magic.
 
 ## Usage
 
+Start servers
+
+    docker run -d -p 6379:6379 --rm --name=hi-redis redis:5.0-alpine
+    docker run -d -p 9200:9200 --rm --name=hi-es7 -e "discovery.type=single-node"  docker.elastic.co/elasticsearch/elasticsearch:7.3.0
+
 Start the worker
 
     es-writer -c /path/to/config.yaml
@@ -23,8 +28,6 @@ Start new requests
     redis-cli > RPUSH $queueName $bulkableRequest1
               > RPUSH $queueName $bulkableRequest2 $bulkableRequest3
 
-### Test local
-
-    docker run -d -p 6379:6379 --rm --name=hi-redis redis:5.0-alpine
-    docker run -d -p 9200:9200 --rm --name=hi-es7 -e "discovery.type=single-node"  docker.elastic.co/elasticsearch/elasticsearch:7.3.0    
+Test
+    
     go test -race -v ./...
