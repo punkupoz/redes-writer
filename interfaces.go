@@ -74,7 +74,9 @@ func NewWriter(ctx context.Context, client *elastic.Client, cnf *Config) (Writer
 	}
 
 	return func(req *Request) error {
-		processor.Add(req)
+		if nil != req {
+			processor.Add(*req)
+		}
 
 		return nil
 	}, nil
