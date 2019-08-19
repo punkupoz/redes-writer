@@ -23,10 +23,10 @@ type (
 		Parent          string      `json:"parent"`
 		Routing         string      `json:"routing"`
 		Version         *int64      `json:"version,omitEmpty"` // default is MATCH_ANY
-		VersionType     *string     `json:"versionType"`       // default is "internal"
+		VersionType     *string     `json:"version_type"`      // default is "internal"
 		Doc             interface{} `json:"doc"`
 		Pipeline        string      `json:"pipeline"`
-		RetryOnConflict int         `json:"retryOnConflict"`
+		RetryOnConflict int         `json:"retry_on_conflict"`
 	}
 
 	Update struct {
@@ -36,14 +36,14 @@ type (
 		Parent          string          `json:"parent"`
 		Routing         string          `json:"routing"`
 		Version         *int64          `json:"version,omitEmpty"` // default is MATCH_ANY
-		VersionType     *string         `json:"versionType"`       // default is "internal"
-		DetectNoop      *bool           `json:"detectNoop"`
+		VersionType     *string         `json:"version_type"`      // default is "internal"
+		DetectNoop      *bool           `json:"detect_noop"`
 		Doc             interface{}     `json:"doc"`
-		DocAsUpsert     *bool           `json:"docAsUpsert"`
+		DocAsUpsert     *bool           `json:"doc_as_upsert"`
 		Upsert          interface{}     `json:"upsert"`
 		Script          *elastic.Script `json:"script"`
-		RetryOnConflict *int            `json:"retryOnConflict"`
-		ScriptedUpsert  bool            `json:"scriptedUpsert"`
+		RetryOnConflict *int            `json:"retry_on_conflict"`
+		ScriptedUpsert  bool            `json:"scripted_upsert"`
 	}
 
 	Delete struct {
@@ -53,7 +53,7 @@ type (
 		Parent      string  `json:"parent"`
 		Routing     string  `json:"routing"`
 		Version     *int64  `json:"version,omitEmpty"` // default is MATCH_ANY
-		VersionType *string `json:"versionType"`       // default is "internal"
+		VersionType *string `json:"version_type"`      // default is "internal"
 	}
 )
 
