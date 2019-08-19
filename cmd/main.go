@@ -13,7 +13,8 @@ func main() {
 	cnfFile := flag.String("c", "", "")
 	flag.Parse()
 
-	ctx := context.Background()
+	ctx, stop := context.WithCancel(context.Background())
+	defer stop()
 	errCh, err := Run(ctx, *cnfFile)
 
 	if err != nil {
