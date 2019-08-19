@@ -3,6 +3,7 @@ package redes_writer
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -84,13 +85,14 @@ func NewWriter(ctx context.Context, client *elastic.Client, cnf *Config) (Writer
 
 func NewConfig(cnfPath string) (*Config, error) {
 	yamlBytes, err := ioutil.ReadFile(cnfPath)
+	expandedInput := os.ExpandEnv(string(yamlBytes))
 
 	if nil != err {
 		return nil, err
 	}
 
 	cnf := &Config{}
-	err = yaml.Unmarshal(yamlBytes, cnf)
+	err = yaml.Unmarshal([]byte(expandedInput), cnf)
 	if nil != err {
 		return nil, err
 	}
@@ -99,9 +101,6 @@ func NewConfig(cnfPath string) (*Config, error) {
 }
 
 func Run(ctx context.Context, cnfPath string) (chan error, error) {
-	cc, stop := context.WithCancel(ctx)
-	defer stop()
-
 	cnf, err := NewConfig(cnfPath)
 	if nil != err {
 		return nil, err
@@ -118,12 +117,12 @@ func Run(ctx context.Context, cnfPath string) (chan error, error) {
 		return nil, err
 	}
 
-	writer, err := NewWriter(cc, cElasticSearch, cnf)
+	writer, err := NewWriter(ctx, cElasticSearch, cnf)
 	if nil != err {
 		return nil, err
 	}
 
-	return run(cc, queue, writer)
+	return run(ctx, queue, writer)
 }
 
 func run(ctx context.Context, queue Queue, writer Writer) (chan error, error) {

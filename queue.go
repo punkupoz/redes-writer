@@ -80,9 +80,9 @@ func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
 			// queue is now empty, don't need fetching it again
 			if 0 == len(result) {
 				break
+			} else {
+				ch <- result
 			}
-
-			ch <- result
 		}
 
 		select {
