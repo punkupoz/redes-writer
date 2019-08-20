@@ -14,6 +14,27 @@ It's also easy to create cluster ElasticSearch servers without magic.
 
 ## Usage
 
+Manual testing
+
+    git clone https://github.com/andytruong/redes-writer.git
+    cd redes-writer
+    docker-compose up -d
+    
+    # queue bulkable request
+    # -------
+    docker-compose exec redis sh -c redis-cli
+    127.0.0.1:6379> RPUSH es-writer '{"type": "index","index": {"index": "lr","type":  "enrolment","id":    "123","routing": "456","doc": {"field1" : "value1"}}}'
+    127.0.0.1:6379> RPUSH es-writer '{"type": "update", "update": { "index": "lr", "type":  "enrolment", "id":    "123", "routing": "456", "doc": { "field2" : "value2" }}}'
+    127.0.0.1:6379> PUBLISH es-writer-pubsub 1
+    
+    # check ES server for expeting result
+    # -------
+    docker-compose exec elasticsearch curl localhost:9200/lr/enrolment/123
+    
+    # Clean up
+    # -------
+    docker-compose down
+
 Start servers
 
     docker run -d -p 6379:6379 --rm --name=hi-redis redis:5.0-alpine
