@@ -77,6 +77,19 @@ func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*el
 				if err != nil {
 					logrus.WithError(err).Errorln("process error")
 				}
+
+				for _, rItem := range response.Items {
+					for riKey, riValue := range rItem {
+						if riValue.Error != nil {
+							logrus.
+								WithField("key", riKey).
+								WithField("type", riValue.Error.Type).
+								WithField("phase", riValue.Error.Phase).
+								WithField("reason", riValue.Error.Reason).
+								Errorf("failed to process item %s", riKey)
+						}
+					}
+				}
 			},
 		).
 		Do(ctx)
