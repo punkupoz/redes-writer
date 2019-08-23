@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/olivere/elastic/v7"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -71,6 +72,13 @@ func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*el
 		Stats(true).
 		// Workers(5)                TODO: Learn this feature
 		// RetryItemStatusCodes(400) TODO: Learn this feature
+		After(
+			func(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
+				if err != nil {
+					logrus.WithError(err).Errorln("process error")
+				}
+			},
+		).
 		Do(ctx)
 }
 
