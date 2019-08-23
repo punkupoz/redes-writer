@@ -305,7 +305,13 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	cnf, _ := NewConfig("config.sample.yaml")
-	writer, _ := NewWriter(ctx, es, cnf)
+	processor, err := NewProcessor(ctx, es, cnf)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	writer, _ := NewWriter(context.WithValue(ctx, "processor", processor))
 	client := newRedisClient(redisUrl())
 	client.FlushAll()
 	queue, _ := NewQueue(client, "myQueue")

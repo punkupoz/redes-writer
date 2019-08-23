@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"fmt"
+	"net/http"
 
+	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
 
 	. "github.com/andytruong/redes-writer"
@@ -15,12 +19,38 @@ func main() {
 
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
-	errCh, err := Run(ctx, *cnfFile)
 
+	cnf, err := NewConfig(*cnfFile)
+	if err != nil {
+		logrus.WithError(err).Panic("can not read config file")
+	}
+
+	processor, errCh, err := Run(ctx, *cnfFile)
 	if err != nil {
 		logrus.WithError(err).Panic("startup error")
 	}
 
 	err = <-errCh
 	logrus.WithError(err).Panic("runtime error")
+
+	http.HandleFunc("/stats", getStatsHandler(processor))
+
+	logrus.
+		WithError(http.ListenAndServe(cnf.Admin.Url, nil)).
+		Panic()
+}
+
+func getStatsHandler(processor *elastic.BulkProcessor) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		now := processor.Stats()
+		if stats, err := json.Marshal(now); err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(500)
+			_, _ = fmt.Fprintln(w, `{"error": "failed to parse statistics."}`)
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(200)
+			_, _ = w.Write(stats)
+		}
+	}
 }
