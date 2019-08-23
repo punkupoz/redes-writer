@@ -1,4 +1,4 @@
-Elastic Search writer [![Build Status](https://travis-ci.org/andytruong/redes-writer.svg?branch=7.x)](https://travis-ci.org/andytruong/redes-writer)
+Elastic Search writer [![Build Status](https://travis-ci.org/andytruong/redes-writer.svg?branch=7.x)](https://travis-ci.org/andytruong/redes-writer) [![](https://images.microbadger.com/badges/image/andytruong/redes-writer.svg)](https://microbadger.com/images/andytruong/redes-writer "Get your own image badge on microbadger.com") [![](https://images.microbadger.com/badges/version/andytruong/redes-writer.svg)](https://microbadger.com/images/andytruong/redes-writer "Get your own version badge on microbadger.com")
 ====
 
 ## Problems
