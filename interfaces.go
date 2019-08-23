@@ -38,6 +38,9 @@ type (
 
 	// for the services above working, we need configuration
 	Config struct {
+		Admin struct {
+			Url string `yaml:"url"`
+		} `yaml:"admin"`
 		Redis struct {
 			Url       string `yaml:"url"`
 			QueueName string `yaml:"queueName"`
@@ -60,19 +63,19 @@ func NewListener() Listener {
 	return newListener()
 }
 
-func NewWriter(ctx context.Context, client *elastic.Client, cnf *Config) (Writer, error) {
-	processor, err := client.BulkProcessor().
+func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*elastic.BulkProcessor, error) {
+	return client.BulkProcessor().
 		Name("es-writer").
 		BulkSize(cnf.Listener.BufferSize).
 		FlushInterval(cnf.Listener.FlushInterval).
+		Stats(true).
 		// Workers(5)                TODO: Learn this feature
 		// RetryItemStatusCodes(400) TODO: Learn this feature
-		Stats(true).
 		Do(ctx)
+}
 
-	if nil != err {
-		return nil, err
-	}
+func NewWriter(ctx context.Context) (Writer, error) {
+	processor := ctx.Value("processor").(*elastic.BulkProcessor)
 
 	return func(req *Request) error {
 		if nil != req {
@@ -100,29 +103,37 @@ func NewConfig(cnfPath string) (*Config, error) {
 	return cnf, nil
 }
 
-func Run(ctx context.Context, cnfPath string) (chan error, error) {
+func Run(ctx context.Context, cnfPath string) (*elastic.BulkProcessor, chan error, error) {
 	cnf, err := NewConfig(cnfPath)
 	if nil != err {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cRedis := newRedisClient(cnf.Redis.Url)
 	queue, err := NewQueue(cRedis, cnf.Redis.QueueName)
 	if nil != err {
-		return nil, err
+		return nil, nil, err
 	}
 
-	writer, err := NewWriter(ctx, cElasticSearch, cnf)
+	processor, err := NewProcessor(ctx, cElasticSearch, cnf)
 	if nil != err {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return run(ctx, queue, writer)
+	ctx = context.WithValue(ctx, "processor", processor)
+	writer, err := NewWriter(ctx)
+	if nil != err {
+		return nil, nil, err
+	}
+
+	errCh, err := run(ctx, queue, writer)
+
+	return processor, errCh, err
 }
 
 func run(ctx context.Context, queue Queue, writer Writer) (chan error, error) {
