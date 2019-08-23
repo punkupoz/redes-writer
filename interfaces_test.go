@@ -311,6 +311,7 @@ func TestEndToEnd(t *testing.T) {
 		t.FailNow()
 	}
 
+	defer processor.Close()
 	writer, _ := NewWriter(context.WithValue(ctx, "processor", processor))
 	client := newRedisClient(redisUrl())
 	client.FlushAll()

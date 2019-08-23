@@ -65,6 +65,8 @@ func NewListener() Listener {
 }
 
 func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*elastic.BulkProcessor, error) {
+	// should read: https://github.com/olivere/elastic/wiki/BulkProcessor
+
 	return client.BulkProcessor().
 		Name("es-writer").
 		BulkSize(cnf.Listener.BufferSize).

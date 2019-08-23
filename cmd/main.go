@@ -29,16 +29,16 @@ func main() {
 	if err != nil {
 		logrus.WithError(err).Panic("startup error")
 	}
-	
-	http.HandleFunc("/stats", getStatsHandler(processor))
 
+	go func() {
+		_ = processor.Close()
+		panic(<-errCh)
+	}()
+
+	http.HandleFunc("/stats", getStatsHandler(processor))
 	logrus.
 		WithField("port", cnf.Admin.Url).
 		Println("es-writer admin ready")
-
-	go func() {
-		panic(<-errCh)
-	}()
 
 	logrus.
 		WithError(http.ListenAndServe(cnf.Admin.Url, nil)).
