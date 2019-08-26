@@ -1,8 +1,0 @@
-init_config:
-instances:
-  ## @param host - string - required
-  ## Enter the host to connect to.
-  - host: redis
-    ## @param port - integer - required
-    ## Enter the port of the host to connect to.
-    port: 6379

@@ -1,8 +1,0 @@
-init_config:
-
-instances:
-  - url: http://elasticsearch:9200 # or wherever your cluster API is listening
-    cluster_stats: false # set true ONLY if you're not running the check on each cluster node
-    pshard_stats: true # the agent sends primary shard metrics
-    index_stats: true # the agent sends index level metrics
-    pending_task_stats: true # the agent sends cluster-wide pending task metrics

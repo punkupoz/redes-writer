@@ -52,8 +52,3 @@ Start new requests
 Test
     
     go test -race -v ./...
-    
-Docker compose with Datadog
-
-    DD_API_KEY=<YOUR_DD_API_KEY> docker-compose -f docker-compose.yml -f datadog-compose.yml up
-    
