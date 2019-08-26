@@ -2,14 +2,9 @@ package redes_writer
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
-	"time"
-
 	"github.com/go-redis/redis"
 	"github.com/olivere/elastic/v7"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 type (
@@ -36,24 +31,6 @@ type (
 	// make this an interface, so that we can mock for unit testing without
 	// real elastic-search server.
 	Writer func(req *Request) error
-
-	// for the services above working, we need configuration
-	Config struct {
-		Admin struct {
-			Url string `yaml:"url"`
-		} `yaml:"admin"`
-		Redis struct {
-			Url       string `yaml:"url"`
-			QueueName string `yaml:"queueName"`
-		} `yaml:"redis"`
-		Listener struct {
-			BufferSize    int           `yaml:"bufferSize"`
-			FlushInterval time.Duration `yaml:"flushInterval"`
-		} `yaml:"listener"`
-		ElasticSearch struct {
-			Url string `yaml:"url"`
-		} `yaml:"elasticsearch"`
-	}
 )
 
 func NewQueue(client *redis.Client, name string) (Queue, error) {
@@ -107,23 +84,6 @@ func NewWriter(ctx context.Context) (Writer, error) {
 
 		return nil
 	}, nil
-}
-
-func NewConfig(cnfPath string) (*Config, error) {
-	yamlBytes, err := ioutil.ReadFile(cnfPath)
-	expandedInput := os.ExpandEnv(string(yamlBytes))
-
-	if nil != err {
-		return nil, err
-	}
-
-	cnf := &Config{}
-	err = yaml.Unmarshal([]byte(expandedInput), cnf)
-	if nil != err {
-		return nil, err
-	}
-
-	return cnf, nil
 }
 
 func Run(ctx context.Context, cnfPath string) (*elastic.BulkProcessor, chan error, error) {
