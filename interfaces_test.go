@@ -28,25 +28,6 @@ func esUrl() string {
 	return "http://127.0.0.1:9200/?sniff=false"
 }
 
-func TestConfig_Parse(t *testing.T) {
-	cnf, err := NewConfig("config.sample.yaml")
-	if nil != err {
-		t.Error(err)
-		t.FailNow()
-	}
-
-	// redis connection
-	assert.Equal(t, "redis://redis:6379?ssl=false", cnf.Redis.Url)
-	assert.Equal(t, "es-writer", cnf.Redis.QueueName)
-
-	// ES connection
-	assert.Equal(t, "http://elasticsearch:9200/?sniff=false", cnf.ElasticSearch.Url)
-
-	// Listener
-	assert.Equal(t, 1*time.Second, cnf.Listener.FlushInterval)
-	assert.Equal(t, 500, cnf.Listener.BufferSize)
-}
-
 func TestRequest_ToBulkIndex(t *testing.T) {
 	raw := []byte(`
 		{
