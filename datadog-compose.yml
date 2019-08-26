@@ -1,0 +1,14 @@
+# example docker-compose, just for testing
+# ---------------------
+version: '2.1'
+services:
+  datadog:
+    image: datadog/agent:latest
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/proc/:/host/proc/:ro"
+      - "/sys/fs/cgroup/:/host/sys/fs/cgroup:ro"
+      - "./config/datadog/elasticsearch.conf.yaml:/etc/datadog-agent/conf.d/elastic.d/conf.yaml"
+      - "./config/datadog/redis.conf.yaml:/etc/datadog-agent/conf.d/redisdb.d/conf.yaml"
