@@ -3,7 +3,6 @@ package redes_writer
 import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -11,13 +10,6 @@ import (
 
 func TestNewConfig(t *testing.T) {
 	assert := assert.New(t)
-	testConfName := "testConfig1.yaml"
-
-	file, err := ioutil.ReadFile("config.sample.yaml")
-	if nil != err {
-		t.Error(err)
-		t.FailNow()
-	}
 
 	envPrefix := "REDES_WRITER"
 
@@ -25,15 +17,7 @@ func TestNewConfig(t *testing.T) {
 	_ = os.Setenv(envPrefix+"_REDIS_URL", "redis://rere:6379?ssl=false")
 	_ = os.Setenv(envPrefix+"_ELASTICSEARCH_URL", "http://searchelast:9200/?sniff=true")
 
-	err = ioutil.WriteFile(testConfName, file, 0755)
-	if nil != err {
-		t.Error(err)
-		t.FailNow()
-	}
-
-	defer os.Remove(testConfName)
-
-	cnf, err := NewConfig(testConfName)
+	cnf, err := NewConfig("config.sample.yaml")
 	if nil != err {
 		t.Error(err)
 		t.FailNow()

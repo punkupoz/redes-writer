@@ -19,6 +19,8 @@ type (
 
 		// Queue for each es-writer should be have unique name.
 		Name() string
+
+		CountItems() int64
 	}
 
 	Listener interface {
@@ -86,37 +88,38 @@ func NewWriter(ctx context.Context) (Writer, error) {
 	}, nil
 }
 
-func Run(ctx context.Context, cnfPath string) (*elastic.BulkProcessor, chan error, error) {
+
+func Run(ctx context.Context, cnfPath string) (*elastic.BulkProcessor, Queue, chan error, error) {
 	cnf, err := NewConfig(cnfPath)
 	if nil != err {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	cRedis := newRedisClient(cnf.Redis.Url)
 	queue, err := NewQueue(cRedis, cnf.Redis.QueueName)
 	if nil != err {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	processor, err := NewProcessor(ctx, cElasticSearch, cnf)
 	if nil != err {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	ctx = context.WithValue(ctx, "processor", processor)
 	writer, err := NewWriter(ctx)
 	if nil != err {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	errCh, err := run(ctx, queue, writer)
 
-	return processor, errCh, err
+	return processor, queue, errCh, err
 }
 
 func run(ctx context.Context, queue Queue, writer Writer) (chan error, error) {
