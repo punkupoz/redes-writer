@@ -89,12 +89,7 @@ func NewWriter(ctx context.Context) (Writer, error) {
 }
 
 
-func Run(ctx context.Context, cnfPath string) (*elastic.BulkProcessor, Queue, chan error, error) {
-	cnf, err := NewConfig(cnfPath)
-	if nil != err {
-		return nil, nil, nil, err
-	}
-
+func Run(ctx context.Context, cnf *Config) (*elastic.BulkProcessor, Queue, chan error, error) {
 	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
 		return nil, nil, nil, err
