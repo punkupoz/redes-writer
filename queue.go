@@ -126,3 +126,12 @@ func (q queue) sub(ctx context.Context, errCh chan error) chan string {
 
 	return ch
 }
+
+func (q queue) CountItems() int64 {
+	cmd := q.client.LLen(q.name)
+	if cmd.Err() != nil {
+		panic(cmd.Err())
+	}
+
+	return cmd.Val()
+}
