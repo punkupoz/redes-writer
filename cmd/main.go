@@ -31,7 +31,7 @@ func main() {
 	}
 
 	go func() {
-		_ = processor.Close()
+		defer processor.Close()
 		panic(<-errCh)
 	}()
 
