@@ -13,20 +13,19 @@ func TestNewConfig(t *testing.T) {
 	assert := assert.New(t)
 	testConfName := "testConfig1.yaml"
 
-	testFile := []byte(`redis:
-  queueName: "ess-writer"
+	file, err := ioutil.ReadFile("config.sample.yaml")
+	if nil != err {
+		t.Error(err)
+		t.FailNow()
+	}
 
-listener:
-  bufferSize: 5000
-  flushInterval: 3s # for faster CI test running
-`)
 	envPrefix := "REDES_WRITER"
 
 	_ = os.Setenv(envPrefix+"_ADMIN_URL", "envenv:8484")
 	_ = os.Setenv(envPrefix+"_REDIS_URL", "redis://rere:6379?ssl=false")
 	_ = os.Setenv(envPrefix+"_ELASTICSEARCH_URL", "http://searchelast:9200/?sniff=true")
 
-	err := ioutil.WriteFile(testConfName, testFile, 0755)
+	err = ioutil.WriteFile(testConfName, file, 0755)
 	if nil != err {
 		t.Error(err)
 		t.FailNow()
@@ -43,18 +42,21 @@ listener:
 	// redis connection
 	assert.Equal("envenv:8484", cnf.Admin.Url)
 	assert.Equal("redis://rere:6379?ssl=false", cnf.Redis.Url)
-	assert.Equal("ess-writer", cnf.Redis.QueueName)
+
+	// ES connection
+	assert.Equal("es-writer", cnf.Redis.QueueName)
 	assert.Equal("http://searchelast:9200/?sniff=true", cnf.ElasticSearch.Url)
-	assert.Equal(5000, cnf.Listener.BufferSize)
-	assert.Equal(3*time.Second, cnf.Listener.FlushInterval)
+
+	// Listener
+	assert.Equal(500, cnf.Listener.BufferSize)
+	assert.Equal(1*time.Second, cnf.Listener.FlushInterval)
 }
 
 func TestEnvOverride(t *testing.T) {
 	var cnf Config
 	assert := assert.New(t)
-	testConfName := "testConfig2.yaml"
 	testFile := []byte(`admin:
-  url: "0.0.0.0:8484"
+  url: ${ADMIN_URL}
 
 redis:
   url: "redis://redis:6379?ssl=false"
@@ -68,15 +70,9 @@ listener:
   flushInterval: 1s # for faster CI test running
 `)
 
-	err := ioutil.WriteFile(testConfName, testFile, 0755)
-	if nil != err {
-		t.Error(err)
-		t.FailNow()
-	}
+	os.Setenv("ADMIN_URL", "0.0.0.0:8484")
 
-	defer os.Remove(testConfName)
-
-	err = fileConfig(&cnf, testConfName)
+	err := setConfigFromBytes(&cnf, testFile)
 	if nil != err {
 		t.Error(err)
 		t.FailNow()
