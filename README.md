@@ -52,3 +52,24 @@ Start new requests
 Test
     
     go test -race -v ./...
+
+### Stats
+
+    GET /stats
+
+    {
+      "Flushed": 32436,
+      "Committed": 10200,
+      "Indexed": 0,
+      "Created": 0,
+      "Updated": 11145,
+      "Deleted": 0,
+      "Succeeded": 11145,
+      "Failed": 0,
+      "Workers": [
+        {
+          "Queued": 0,
+          "LastDuration": 6000000
+        }
+      ]
+    }
