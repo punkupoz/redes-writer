@@ -25,7 +25,7 @@ func main() {
 		logrus.WithError(err).Panic("can not read config file")
 	}
 
-	processor, errCh, err := Run(ctx, *cnfFile)
+	processor, queue, errCh, err := Run(ctx, *cnfFile)
 	if err != nil {
 		logrus.WithError(err).Panic("startup error")
 	}
@@ -35,7 +35,7 @@ func main() {
 		panic(<-errCh)
 	}()
 
-	http.HandleFunc("/stats", getStatsHandler(processor))
+	http.HandleFunc("/stats", getStatsHandler(processor, queue))
 	logrus.
 		WithField("port", cnf.Admin.Url).
 		Println("es-writer admin ready")
@@ -45,10 +45,21 @@ func main() {
 		Panic()
 }
 
-func getStatsHandler(processor *elastic.BulkProcessor) http.HandlerFunc {
+func getStatsHandler(processor *elastic.BulkProcessor, queue Queue) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		now := processor.Stats()
-		if stats, err := json.Marshal(now); err != nil {
+		type Stats struct {
+			Processor      elastic.BulkProcessorStats `json:"processor"`
+			QueueName      string                     `json:"queueName"`
+			QueueTotalItem int64                      `json:"queueTotalItem"`
+		}
+
+		stats := Stats{
+			Processor:      processor.Stats(),
+			QueueName:      queue.Name(),
+			QueueTotalItem: queue.CountItems(),
+		}
+
+		if stats, err := json.Marshal(stats); err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(500)
 			_, _ = fmt.Fprintln(w, `{"error": "failed to parse statistics."}`)
