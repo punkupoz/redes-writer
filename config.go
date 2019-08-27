@@ -1,12 +1,14 @@
 package redes_writer
 
 import (
-	"gopkg.in/yaml.v2"
-	"github.com/kelseyhightower/envconfig"
 	"io/ioutil"
 	"os"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
+	"gopkg.in/yaml.v2"
 )
+
 // configuration required to run services in interface.go
 type Config struct {
 	Admin struct {
@@ -27,44 +29,31 @@ type Config struct {
 
 // NewConfig return configuration required to run services in interface.go
 func NewConfig(cnfPath string) (*Config, error) {
-	cnf := &Config{}
 	file, err := ioutil.ReadFile(cnfPath)
 	if err != nil {
 		return nil, err
 	}
 
-	err = setConfigFromBytes(cnf, file)
+	return setConfigFromBytes(file)
+}
+
+// setConfigFromBytes receive a pointer to config and array of bytes of configuration file
+// this function modify value in config pointer
+func setConfigFromBytes(b []byte) (*Config, error) {
+	cnf := &Config{}
+	expandedInput := os.ExpandEnv(string(b))
+
+	err := yaml.Unmarshal([]byte(expandedInput), cnf)
 	if err != nil {
-		return nil, err
+		return cnf, err
 	}
 
-	err = setConfigFromEnv(cnf, "REDES_WRITER")
+	// setConfigFromEnv receive a pointer to config and prefix of environment variable
+	// this function modify value in config pointer
+	err = envconfig.Process("REDES_WRITER", cnf)
 	if err != nil {
 		return nil, err
 	}
 
 	return cnf, nil
-}
-
-// setConfigFromBytes receive a pointer to config and array of bytes of configuration file
-// this function modify value in config pointer
-func setConfigFromBytes(cnf *Config, b []byte) error {
-	expandedInput := os.ExpandEnv(string(b))
-
-	err := yaml.Unmarshal([]byte(expandedInput), cnf)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// setConfigFromEnv receive a pointer to config and prefix of environment variable
-// this function modify value in config pointer
-func setConfigFromEnv(cnf *Config, prefix string) error {
-	err := envconfig.Process(prefix, cnf)
-	if err != nil {
-		return err
-	}
-	return nil
 }
