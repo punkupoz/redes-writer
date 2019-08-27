@@ -25,7 +25,7 @@ func main() {
 		logrus.WithError(err).Panic("can not read config file")
 	}
 
-	processor, queue, errCh, err := Run(ctx, *cnfFile)
+	processor, queue, errCh, err := Run(ctx, cnf)
 	if err != nil {
 		logrus.WithError(err).Panic("startup error")
 	}
