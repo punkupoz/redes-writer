@@ -1,0 +1,11 @@
+# example docker-compose, just for testing
+# ---------------------
+version: '2.1'
+services:
+  prometheus:
+    image: "prom/prometheus:v2.12.0"
+    volumes:
+      - "./configs/prometheus.sample.yml://etc/prometheus/prometheus.yml"
+  grafana:
+    image: "grafana/grafana:6.3.3"
+

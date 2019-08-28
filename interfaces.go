@@ -29,6 +29,10 @@ type (
 		Run(ctx context.Context, errCh chan error, q Queue, writer Writer) error
 	}
 
+	Metric interface {
+
+	}
+
 	// from  bulk-able request, send to ElasticServer
 	// make this an interface, so that we can mock for unit testing without
 	// real elastic-search server.
@@ -43,7 +47,7 @@ func NewListener() Listener {
 	return newListener()
 }
 
-func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*elastic.BulkProcessor, error) {
+func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config, mc *metricCollector) (*elastic.BulkProcessor, error) {
 	// should read: https://github.com/olivere/elastic/wiki/BulkProcessor
 
 	return client.BulkProcessor().
@@ -55,6 +59,7 @@ func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*el
 		// RetryItemStatusCodes(400) // default: 408, 429, 503, 507
 		After(
 			func(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
+				mc.gauges.opsQueued.Add(100)
 				if err != nil {
 					logrus.WithError(err).Errorln("process error")
 				}
@@ -89,7 +94,7 @@ func NewWriter(ctx context.Context) (Writer, error) {
 }
 
 
-func Run(ctx context.Context, cnf *Config) (*elastic.BulkProcessor, Queue, chan error, error) {
+func Run(ctx context.Context, cnf *Config, mc *metricCollector) (*elastic.BulkProcessor, Queue, chan error, error) {
 	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
 		return nil, nil, nil, err
@@ -101,7 +106,7 @@ func Run(ctx context.Context, cnf *Config) (*elastic.BulkProcessor, Queue, chan 
 		return nil, nil, nil, err
 	}
 
-	processor, err := NewProcessor(ctx, cElasticSearch, cnf)
+	processor, err := NewProcessor(ctx, cElasticSearch, cnf, mc)
 	if nil != err {
 		return nil, nil, nil, err
 	}

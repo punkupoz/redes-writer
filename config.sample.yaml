@@ -2,14 +2,14 @@ admin:
   url: "0.0.0.0:8484"
 
 redis:
-  url: "redis://redis:6379?ssl=false"
+  url: "redis://localhost:6379?ssl=false"
   queueName: "es-writer"
 
 elasticsearch:
   # @see
   # - https://github.com/olivere/elastic/wiki/Configuration
   # - https://github.com/olivere/elastic/wiki/Sniffing
-  url: "http://elasticsearch:9200/?sniff=false"
+  url: "http://localhost:9200/?sniff=false"
 
 listener:
   bufferSize: 500

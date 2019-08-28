@@ -11,10 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	. "github.com/andytruong/redes-writer"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
 	cnfFile := flag.String("c", "", "")
+	mc := NewMetricCollector()
 	flag.Parse()
 
 	ctx, stop := context.WithCancel(context.Background())
@@ -25,7 +27,7 @@ func main() {
 		logrus.WithError(err).Panic("can not read config file")
 	}
 
-	processor, queue, errCh, err := Run(ctx, cnf)
+	processor, queue, errCh, err := Run(ctx, cnf, mc)
 	if err != nil {
 		logrus.WithError(err).Panic("startup error")
 	}
@@ -35,7 +37,10 @@ func main() {
 		panic(<-errCh)
 	}()
 
+
 	http.HandleFunc("/stats", getStatsHandler(processor, queue))
+	http.Handle("/metrics", promhttp.Handler())
+
 	logrus.
 		WithField("port", cnf.Admin.Url).
 		Println("es-writer admin ready")
