@@ -25,7 +25,7 @@ func newMetricCollector(cnf *Config) (*metricCollector, error) {
 				Namespace: "redes_writer",
 				Name:      "process_time",
 				Help:      "of time of operations processes",
-				Buckets: []float64{0.25, 0.5, 0.75, 1, 1.25},
+				Buckets: []float64{0.025, 0.05, 0.075, 0.1, 0.125}, //TODO: Configurate suitable bucket size
 			}),
 		},
 	}
