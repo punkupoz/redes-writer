@@ -71,7 +71,16 @@ func (q queue) Listen(ctx context.Context, mc *metricCollector, errCh chan error
 
 func (q *queue) loop(ctx context.Context, ch chan string, sub chan string, mc *metricCollector) {
 	for { // run forever
+
+		// record and push to metric
+		tch := make(chan struct{})
+		// start timer
 		timer := prometheus.NewTimer(mc.Histogram.ProcessTime)
+		go func() {
+			// record and push
+			<-tch
+			defer timer.ObserveDuration()
+		}()
 
 		for { // process all items in queue
 			result, err := q.client.LPop(q.Name()).Result()
@@ -83,13 +92,12 @@ func (q *queue) loop(ctx context.Context, ch chan string, sub chan string, mc *m
 
 			// queue is now empty, don't need fetching it again
 			if 0 == len(result) {
+				tch <- struct{}{}
 				break
 			} else {
 				ch <- result
 			}
 		}
-
-		timer.ObserveDuration()
 
 		select {
 		case <-ctx.Done(): // got cancel signature, stop

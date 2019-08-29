@@ -9,16 +9,18 @@ type (
 		Histogram histogram
 	}
 
+	// Histogram metrics
 	histogram struct {
 		ProcessTime prometheus.Histogram
 	}
 )
 
-func NewMetricCollector(cnf *Config) (*metricCollector, error) {
-	return newMetricCollector(cnf)
+func NewMetricCollector() (*metricCollector, error) {
+	return newMetricCollector()
 }
 
-func newMetricCollector(cnf *Config) (*metricCollector, error) {
+// Return a metric collector that ready to be registered into /metrics endpoint
+func newMetricCollector() (*metricCollector, error) {
 	collectors := metricCollector{
 		Histogram: histogram{
 			ProcessTime: prometheus.NewHistogram(prometheus.HistogramOpts{
@@ -30,9 +32,12 @@ func newMetricCollector(cnf *Config) (*metricCollector, error) {
 		},
 	}
 
-	if cnf.Prometheus.ProcessTime {
-		prometheus.MustRegister(collectors.Histogram.ProcessTime)
-	}
-
 	return &collectors, nil
+}
+
+// Register metrics collector, based on configuration
+func (mc *metricCollector) Register(cnf *Config) {
+	if cnf.Prometheus.ProcessTime {
+		prometheus.MustRegister(mc.Histogram.ProcessTime)
+	}
 }

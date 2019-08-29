@@ -26,10 +26,11 @@ func main() {
 		logrus.WithError(err).Panic("can not read config file")
 	}
 
-	mc, err := NewMetricCollector(cnf)
+	mc, err := NewMetricCollector()
 	if err != nil {
 		logrus.WithError(err).Panic("cannot create metric collector")
 	}
+	mc.Register(cnf)
 
 	processor, queue, errCh, err := Run(ctx, cnf, mc)
 	if err != nil {
