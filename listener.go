@@ -12,8 +12,8 @@ func newListener() Listener {
 	return &listener{}
 }
 
-func (l *listener) Run(ctx context.Context, errCh chan error, q Queue, writer Writer) error {
-	ch := q.Listen(ctx, errCh)
+func (l *listener) Run(ctx context.Context, errCh chan error, q Queue, writer Writer, mc *metricCollector) error {
+	ch := q.Listen(ctx, mc, errCh)
 
 	go func(ctx context.Context) {
 		for {

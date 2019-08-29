@@ -2,31 +2,37 @@ package redes_writer
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-type metricCollector struct{
-	gauges gauge
+type (
+	metricCollector struct{
+		Histogram histogram
+	}
+
+	histogram struct {
+		ProcessTime prometheus.Histogram
+	}
+)
+
+func NewMetricCollector(cnf *Config) (*metricCollector, error) {
+	return newMetricCollector(cnf)
 }
 
-type gauge struct {
-	opsQueued prometheus.Gauge
-}
-
-func NewMetricCollector() *metricCollector {
-	return newMetricCollector()
-}
-
-func newMetricCollector() *metricCollector {
+func newMetricCollector(cnf *Config) (*metricCollector, error) {
 	collectors := metricCollector{
-		gauges: gauge{
-			opsQueued: promauto.NewGauge(prometheus.GaugeOpts{
+		Histogram: histogram{
+			ProcessTime: prometheus.NewHistogram(prometheus.HistogramOpts{
 				Namespace: "redes_writer",
-				Name:      "bulk_processing",
-				Help:      "Number of bulks is being processes",
+				Name:      "process_time",
+				Help:      "of time of operations processes",
+				Buckets: []float64{0.25, 0.5, 0.75, 1, 1.25},
 			}),
 		},
 	}
 
-	return &collectors
+	if cnf.Prometheus.ProcessTime {
+		prometheus.MustRegister(collectors.Histogram.ProcessTime)
+	}
+
+	return &collectors, nil
 }

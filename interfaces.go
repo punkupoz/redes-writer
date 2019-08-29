@@ -15,7 +15,7 @@ type (
 		Write(payload ...interface{}) error
 
 		// es-writer's listener watches this queue to process the bulk-able requests.
-		Listen(ctx context.Context, errCh chan error) chan string
+		Listen(ctx context.Context, mc *metricCollector, errCh chan error) chan string
 
 		// Queue for each es-writer should be have unique name.
 		Name() string
@@ -26,7 +26,7 @@ type (
 	Listener interface {
 		// entry point to start the es-writer
 		// use ctx to cancel the process.
-		Run(ctx context.Context, errCh chan error, q Queue, writer Writer) error
+		Run(ctx context.Context, errCh chan error, q Queue, writer Writer, mc *metricCollector) error
 	}
 
 	Metric interface {
@@ -47,7 +47,7 @@ func NewListener() Listener {
 	return newListener()
 }
 
-func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config, mc *metricCollector) (*elastic.BulkProcessor, error) {
+func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*elastic.BulkProcessor, error) {
 	// should read: https://github.com/olivere/elastic/wiki/BulkProcessor
 
 	return client.BulkProcessor().
@@ -59,7 +59,6 @@ func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config, mc *
 		// RetryItemStatusCodes(400) // default: 408, 429, 503, 507
 		After(
 			func(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
-				mc.gauges.opsQueued.Add(100)
 				if err != nil {
 					logrus.WithError(err).Errorln("process error")
 				}
@@ -106,7 +105,7 @@ func Run(ctx context.Context, cnf *Config, mc *metricCollector) (*elastic.BulkPr
 		return nil, nil, nil, err
 	}
 
-	processor, err := NewProcessor(ctx, cElasticSearch, cnf, mc)
+	processor, err := NewProcessor(ctx, cElasticSearch, cnf)
 	if nil != err {
 		return nil, nil, nil, err
 	}
@@ -117,14 +116,14 @@ func Run(ctx context.Context, cnf *Config, mc *metricCollector) (*elastic.BulkPr
 		return nil, nil, nil, err
 	}
 
-	errCh, err := run(ctx, queue, writer)
+	errCh, err := run(ctx, queue, writer, mc)
 
 	return processor, queue, errCh, err
 }
 
-func run(ctx context.Context, queue Queue, writer Writer) (chan error, error) {
+func run(ctx context.Context, queue Queue, writer Writer, mc *metricCollector) (chan error, error) {
 	errCh := make(chan error, 1)
-	err := NewListener().Run(ctx, errCh, queue, writer)
+	err := NewListener().Run(ctx, errCh, queue, writer, mc)
 	if nil != err {
 		return nil, err
 	}

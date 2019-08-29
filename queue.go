@@ -3,6 +3,8 @@ package redes_writer
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -33,7 +35,6 @@ func newQueue(client *redis.Client, name string) (*queue, error) {
 	}
 
 	q.ps = client.Subscribe(q.pubsubChanel())
-
 	// wait for pubsub connection successfully connected.
 	_, err := q.ps.ReceiveTimeout(time.Second)
 	if err != nil {
@@ -45,6 +46,7 @@ func newQueue(client *redis.Client, name string) (*queue, error) {
 
 func (q queue) Write(payload ...interface{}) error {
 	cmd := q.client.RPush(q.Name(), payload...)
+	logrus.Print("queue write")
 
 	if pub := q.client.Publish(q.pubsubChanel(), "111"); pub.Err() != nil {
 		return pub.Err()
@@ -53,7 +55,7 @@ func (q queue) Write(payload ...interface{}) error {
 	return cmd.Err()
 }
 
-func (q queue) Listen(ctx context.Context, errCh chan error) chan string {
+func (q queue) Listen(ctx context.Context, mc *metricCollector, errCh chan error) chan string {
 	ch := make(chan string)
 
 	defer func() {
@@ -62,13 +64,15 @@ func (q queue) Listen(ctx context.Context, errCh chan error) chan string {
 		}
 	}()
 
-	go q.loop(ctx, q.sub(ctx, errCh), ch)
+	go q.loop(ctx, ch, q.sub(ctx, errCh), mc)
 
 	return ch
 }
 
-func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
+func (q *queue) loop(ctx context.Context, ch chan string, sub chan string, mc *metricCollector) {
 	for { // run forever
+		timer := prometheus.NewTimer(mc.Histogram.ProcessTime)
+
 		for { // process all items in queue
 			result, err := q.client.LPop(q.Name()).Result()
 			if nil != err {
@@ -85,6 +89,8 @@ func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
 			}
 		}
 
+		timer.ObserveDuration()
+
 		select {
 		case <-ctx.Done(): // got cancel signature, stop
 			close(ch)
@@ -94,6 +100,7 @@ func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
 			continue
 		}
 	}
+
 }
 
 func (q queue) sub(ctx context.Context, errCh chan error) chan string {

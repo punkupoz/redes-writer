@@ -16,7 +16,6 @@ import (
 
 func main() {
 	cnfFile := flag.String("c", "", "")
-	mc := NewMetricCollector()
 	flag.Parse()
 
 	ctx, stop := context.WithCancel(context.Background())
@@ -25,6 +24,11 @@ func main() {
 	cnf, err := NewConfig(*cnfFile)
 	if err != nil {
 		logrus.WithError(err).Panic("can not read config file")
+	}
+
+	mc, err := NewMetricCollector(cnf)
+	if err != nil {
+		logrus.WithError(err).Panic("cannot create metric collector")
 	}
 
 	processor, queue, errCh, err := Run(ctx, cnf, mc)
