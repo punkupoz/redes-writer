@@ -19,7 +19,7 @@ services:
       timeout: 30s
       retries: 3
   writer:
-    image: "redes-writer:latest"
+    image: "andytruong/redes-writer:7.x"
     volumes:
       - "./config.sample.yaml:/config.yaml"
     entrypoint: ["/app", "-c", "/config.yaml"]
