@@ -55,7 +55,7 @@ func (q queue) Write(payload ...interface{}) error {
 	return cmd.Err()
 }
 
-func (q queue) Listen(ctx context.Context, mc *metricCollector, errCh chan error) chan string {
+func (q queue) Listen(ctx context.Context, errCh chan error) chan string {
 	ch := make(chan string)
 
 	defer func() {
@@ -64,22 +64,23 @@ func (q queue) Listen(ctx context.Context, mc *metricCollector, errCh chan error
 		}
 	}()
 
-	go q.loop(ctx, ch, q.sub(ctx, errCh), mc)
+	go q.loop(ctx, ch, q.sub(ctx, errCh))
 
 	return ch
 }
 
-func (q *queue) loop(ctx context.Context, ch chan string, sub chan string, mc *metricCollector) {
-	for { // run forever
+func (q *queue) loop(ctx context.Context, ch chan string, sub chan string) {
+	pt := newHistogram("process_time", "Process time of each loop", []float64{0.025, 0.05, 0.075, 0.1, 0.125}).register()
 
+	for { // run forever
 		// record and push to metric
 		tch := make(chan struct{})
 		// start timer
-		timer := prometheus.NewTimer(mc.Histogram.ProcessTime)
+		timer := prometheus.NewTimer(pt.Histogram)
 		go func() {
 			// record and push
-			<-tch
 			defer timer.ObserveDuration()
+			<-tch
 		}()
 
 		for { // process all items in queue

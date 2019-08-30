@@ -26,7 +26,7 @@ type Config struct {
 		Url string `yaml:"url"`
 	} `yaml:"elasticsearch"`
 	Prometheus struct {
-		ProcessTime bool `yaml:"processTime"`
+		ProcessTime bool `yaml:"histogram"`
 	} `yaml:"prometheus"`
 }
 

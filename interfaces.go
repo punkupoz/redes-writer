@@ -15,7 +15,7 @@ type (
 		Write(payload ...interface{}) error
 
 		// es-writer's listener watches this queue to process the bulk-able requests.
-		Listen(ctx context.Context, mc *metricCollector, errCh chan error) chan string
+		Listen(ctx context.Context, errCh chan error) chan string
 
 		// Queue for each es-writer should be have unique name.
 		Name() string
@@ -26,11 +26,7 @@ type (
 	Listener interface {
 		// entry point to start the es-writer
 		// use ctx to cancel the process.
-		Run(ctx context.Context, errCh chan error, q Queue, writer Writer, mc *metricCollector) error
-	}
-
-	Metric interface {
-
+		Run(ctx context.Context, errCh chan error, q Queue, writer Writer) error
 	}
 
 	// from  bulk-able request, send to ElasticServer
@@ -92,8 +88,7 @@ func NewWriter(ctx context.Context) (Writer, error) {
 	}, nil
 }
 
-
-func Run(ctx context.Context, cnf *Config, mc *metricCollector) (*elastic.BulkProcessor, Queue, chan error, error) {
+func Run(ctx context.Context, cnf *Config) (*elastic.BulkProcessor, Queue, chan error, error) {
 	cElasticSearch, err := newElasticSearchClient(cnf.ElasticSearch.Url)
 	if nil != err {
 		return nil, nil, nil, err
@@ -116,14 +111,14 @@ func Run(ctx context.Context, cnf *Config, mc *metricCollector) (*elastic.BulkPr
 		return nil, nil, nil, err
 	}
 
-	errCh, err := run(ctx, queue, writer, mc)
+	errCh, err := run(ctx, queue, writer)
 
 	return processor, queue, errCh, err
 }
 
-func run(ctx context.Context, queue Queue, writer Writer, mc *metricCollector) (chan error, error) {
+func run(ctx context.Context, queue Queue, writer Writer) (chan error, error) {
 	errCh := make(chan error, 1)
-	err := NewListener().Run(ctx, errCh, queue, writer, mc)
+	err := NewListener().Run(ctx, errCh, queue, writer)
 	if nil != err {
 		return nil, err
 	}

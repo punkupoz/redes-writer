@@ -2,42 +2,32 @@ package redes_writer
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 type (
-	metricCollector struct {
-		Histogram histogram
-	}
-
-	// Histogram metrics
 	histogram struct {
-		ProcessTime prometheus.Histogram
+		prometheus.Histogram
 	}
 )
 
-func NewMetricCollector() (*metricCollector, error) {
-	return newMetricCollector()
-}
-
 // Return a metric collector that ready to be registered into /metrics endpoint
-func newMetricCollector() (*metricCollector, error) {
-	collectors := metricCollector{
-		Histogram: histogram{
-			ProcessTime: prometheus.NewHistogram(prometheus.HistogramOpts{
-				Namespace: "redes_writer",
-				Name:      "process_time",
-				Help:      "of time of operations processes",
-				Buckets:   []float64{0.025, 0.05, 0.075, 0.1, 0.125}, //TODO: Configurate suitable bucket size
-			}),
-		},
-	}
+func newHistogram(name string, help string, buckets []float64) *histogram {
+	collectors := prometheus.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "redes_writer",
+		Name:      name,
+		Help:      help,
+		Buckets:   buckets,
+	})
 
-	return &collectors, nil
+	return &histogram{collectors}
 }
 
 // Register metrics collector, based on configuration
-func (mc *metricCollector) Register(cnf *Config) {
-	if cnf.Prometheus.ProcessTime {
-		prometheus.MustRegister(mc.Histogram.ProcessTime)
+func (m *histogram) register() *histogram {
+	err := prometheus.Register(m.Histogram)
+	if err != nil {
+		logrus.Warn(err)
 	}
+	return m
 }

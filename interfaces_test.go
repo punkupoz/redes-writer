@@ -3,7 +3,6 @@ package redes_writer
 import (
 	"context"
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"os"
 	"strings"
 	"sync"
@@ -166,17 +165,12 @@ func TestQueue_Listen(t *testing.T) {
 	queue, _ := NewQueue(client, "myQueue")
 	ctx, stop := context.WithCancel(context.TODO())
 
-	mc, err := newMetricCollector()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	ch := queue.Listen(ctx, mc, make(chan error))
+	ch := queue.Listen(ctx, make(chan error))
 
 	m1 := `{"type": "index","index": {"index": "lr","type":  "enrolment","id":    "123","routing": "456","doc": {"field1" : "value1"}}}`
 	m2 := `{"type": "update", "update": { "index": "lr", "type":  "enrolment", "id":    "123", "routing": "456", "doc": { "field2" : "value2" }}}`
 	m3 := `{"type": "delete", "delete": { "index": "lr", "type":  "enrolment", "id":    "123", "routing": "456"}}`
-	err = queue.Write(m1, m2, m3)
+	err := queue.Write(m1, m2, m3)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -237,8 +231,6 @@ func TestListener_Run(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.TODO())
 	wg := sync.WaitGroup{}
 
-	mc, _ := newMetricCollector()
-
 	// start listener
 	// -------
 	err := l.Run(
@@ -251,7 +243,6 @@ func TestListener_Run(t *testing.T) {
 
 			return nil
 		},
-		mc,
 	)
 
 	if nil != err {
@@ -296,7 +287,6 @@ func TestEndToEnd(t *testing.T) {
 	}
 
 	cnf, _ := NewConfig("config.sample.yaml")
-	mc, _ := newMetricCollector()
 
 	processor, err := NewProcessor(ctx, es, cnf)
 	if err != nil {
@@ -309,7 +299,7 @@ func TestEndToEnd(t *testing.T) {
 	client := newRedisClient(redisUrl())
 	client.FlushAll()
 	queue, _ := NewQueue(client, "myQueue")
-	_, _ = run(ctx, queue, writer, mc)
+	_, _ = run(ctx, queue, writer)
 
 	// send some requests into queue
 	m1 := `{"type": "index","index": {"index": "lr","type":  "enrolment","id":    "123","routing": "456","doc": {"field1" : "value1"}}}`
