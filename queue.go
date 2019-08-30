@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -46,7 +45,6 @@ func newQueue(client *redis.Client, name string) (*queue, error) {
 
 func (q queue) Write(payload ...interface{}) error {
 	cmd := q.client.RPush(q.Name(), payload...)
-	logrus.Print("queue write")
 
 	if pub := q.client.Publish(q.pubsubChanel(), "111"); pub.Err() != nil {
 		return pub.Err()
@@ -64,12 +62,12 @@ func (q queue) Listen(ctx context.Context, errCh chan error) chan string {
 		}
 	}()
 
-	go q.loop(ctx, ch, q.sub(ctx, errCh))
+	go q.loop(ctx, q.sub(ctx, errCh), ch)
 
 	return ch
 }
 
-func (q *queue) loop(ctx context.Context, ch chan string, sub chan string) {
+func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
 	pt := newHistogram("process_time", "Process time of each loop", []float64{0.025, 0.05, 0.075, 0.1, 0.125}).register()
 
 	for { // run forever
