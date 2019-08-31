@@ -3,7 +3,6 @@ package redes_writer
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
 
@@ -68,19 +67,7 @@ func (q queue) Listen(ctx context.Context, errCh chan error) chan string {
 }
 
 func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
-	pt := newHistogram("process_time", "Process time of each loop", []float64{0.025, 0.05, 0.075, 0.1, 0.125}).register()
-
 	for { // run forever
-		// record and push to metric
-		tch := make(chan struct{})
-		// start timer
-		timer := prometheus.NewTimer(pt.Histogram)
-		go func() {
-			// record and push
-			defer timer.ObserveDuration()
-			<-tch
-		}()
-
 		for { // process all items in queue
 			result, err := q.client.LPop(q.Name()).Result()
 			if nil != err {
@@ -91,7 +78,6 @@ func (q *queue) loop(ctx context.Context, sub chan string, ch chan string) {
 
 			// queue is now empty, don't need fetching it again
 			if 0 == len(result) {
-				tch <- struct{}{}
 				break
 			} else {
 				ch <- result

@@ -14,3 +14,7 @@ elasticsearch:
 listener:
   bufferSize: 500
   flushInterval: 1s # for faster CI test running
+
+prometheus:
+  histogram:
+    processTime: true

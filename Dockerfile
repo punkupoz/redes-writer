@@ -12,4 +12,6 @@ FROM alpine:3.9
 COPY --from=0 /app /app
 RUN apk add --no-cache ca-certificates
 
+EXPOSE 8484
+
 ENTRYPOINT ["/app"]

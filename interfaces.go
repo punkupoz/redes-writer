@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/go-redis/redis"
 	"github.com/olivere/elastic/v7"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,6 +47,14 @@ func NewListener() Listener {
 func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*elastic.BulkProcessor, error) {
 	// should read: https://github.com/olivere/elastic/wiki/BulkProcessor
 
+	pt := newHistogram( // create a new histogram metric collector
+		"process_time",
+		"Process time of each loop",
+		[]float64{0.05, 0.0625, 0.075, 1},
+	).register(cnf.Prometheus.Histogram.ProcessTime)
+
+	tch := make(chan struct{})
+
 	return client.BulkProcessor().
 		Name("es-writer").
 		BulkSize(cnf.Listener.BufferSize).
@@ -53,11 +62,23 @@ func NewProcessor(ctx context.Context, client *elastic.Client, cnf *Config) (*el
 		Stats(true).
 		// Workers(5)                TODO: Learn this feature
 		// RetryItemStatusCodes(400) // default: 408, 429, 503, 507
+		Before(
+			func(executionId int64, requests []elastic.BulkableRequest) {
+				timer := prometheus.NewTimer(pt.Histogram)
+				go func() {
+					// record and push
+					defer timer.ObserveDuration()
+					<-tch
+				}()
+			},
+		).
 		After(
 			func(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
 				if err != nil {
 					logrus.WithError(err).Errorln("process error")
 				}
+				// trigger record metric event
+				tch <- struct{}{}
 
 				for _, rItem := range response.Items {
 					for riKey, riValue := range rItem {

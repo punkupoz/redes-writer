@@ -25,6 +25,11 @@ type Config struct {
 	ElasticSearch struct {
 		Url string `yaml:"url"`
 	} `yaml:"elasticsearch"`
+	Prometheus struct {
+		Histogram struct {
+			ProcessTime bool `yaml:"processTime"`
+		} `yaml:"histogram"`
+	} `yaml:"prometheus"`
 }
 
 // NewConfig return configuration required to run services in interface.go

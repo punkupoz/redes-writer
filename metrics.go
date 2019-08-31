@@ -24,10 +24,12 @@ func newHistogram(name string, help string, buckets []float64) *histogram {
 }
 
 // Register metrics collector, based on configuration
-func (m *histogram) register() *histogram {
-	err := prometheus.Register(m.Histogram)
-	if err != nil {
-		logrus.Warn(err)
+func (m *histogram) register(active bool) *histogram {
+	if active {
+		err := prometheus.Register(m.Histogram)
+		if err != nil {
+			logrus.Warn(err)
+		}
 	}
 	return m
 }
